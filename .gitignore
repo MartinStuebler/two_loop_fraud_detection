@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Secrets
+.env
+
+# Generated outputs (the eval handoff and the cassette are regenerated)
+outputs/*.jsonl
+
+# Raw downloaded dataset (only the committed sample lives in data/)
+data/raw/
+data/*train*.csv
+data/*test*.csv
+
+# OS
+.DS_Store
