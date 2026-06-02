@@ -50,3 +50,15 @@ One task per file, grouped by SPEC phase. Check each box when the file is done a
 - [x] `eval/evaluate.py` is a stub only; `eval/` otherwise untouched
 - [x] No m-dashes anywhere
 - [x] README covers architecture, Sparkov, four modes, production paragraph
+
+## Phase 6: Triage agent + selectable gate + cost estimate
+- [x] `src/config.py`: add `TRIAGE_CASSETTE_FILE`, `TRIAGE_MAX_TOKENS`,
+      `HAIKU_INPUT_PER_MTOK`, `HAIKU_OUTPUT_PER_MTOK`, `EST_TRIAGE_COST`, `EST_INVESTIGATION_COST`
+- [x] `src/triage_agent.py`: `triage(row, signals) -> {"investigate": bool, "reason": str}`,
+      mock/replay/record/live modes mirroring `src/agent.py`, `build_triage_agent(mode)`
+- [x] `src/run.py`: `--gate rules|agent` (default rules); build triage only for the agent gate
+- [x] `src/orchestrator.py`: gate selects rule-score band vs triage agent; rule_score
+      always computed and written; triage and investigation calls tracked separately
+- [x] `src/orchestrator.py`: print an `[estimated]` cost line every run from call counts (works in mock)
+- [x] `tests/test_triage.py`: mock decision + fake-client real loop + replay; zero live calls
+- [x] Gate: two free mock runs (rules and agent) write 49,683 records and print cost lines; `pytest` green

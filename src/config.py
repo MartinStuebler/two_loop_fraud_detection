@@ -12,6 +12,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 OUTPUTS_DIR = ROOT / "outputs"
+PROMPTS_DIR = ROOT / "prompts"
+
+# Externalized, editable agent system prompts (loaded at module import).
+TRIAGE_PROMPT_FILE = PROMPTS_DIR / "triage.md"
+INVESTIGATION_PROMPT_FILE = PROMPTS_DIR / "investigation.md"
 
 SAMPLE_CSV = DATA_DIR / "sample.csv"
 RAW_TRAIN_CSV = DATA_DIR / "raw" / "train.csv"
@@ -19,6 +24,7 @@ WATCHLIST_FILE = DATA_DIR / "watchlist.txt"
 
 VERDICTS_FILE = OUTPUTS_DIR / "verdicts.jsonl"
 CASSETTE_FILE = OUTPUTS_DIR / "cassette.jsonl"
+TRIAGE_CASSETTE_FILE = OUTPUTS_DIR / "triage_cassette.jsonl"
 
 # --- Sampling (one-time, builds data/sample.csv) -------------------------
 # Keep fraud at its natural low rate; sample is stratified so the rare
@@ -69,11 +75,28 @@ TOKEN_BUDGET_PER_INVESTIGATION = 8_000  # cumulative output-token ceiling
 MAX_TOKENS_PER_CALL = 1_024      # per single model call
 JSON_PARSE_RETRIES = 1           # retry once on bad JSON, then default to review_queue
 
+# --- First-loop triage agent --------------------------------------------
+# Triage is a single short LLM call per transaction (no tools, no ReAct loop),
+# so it gets a small output ceiling of its own. The mock stand-in reuses
+# LOW_THRESHOLD as its deterministic investigate/skip cutoff.
+TRIAGE_MAX_TOKENS = 256          # per single triage call; the reply is just small JSON
+
 # --- Model selection -----------------------------------------------------
 # Default to Haiku for minimal spend; Sonnet selectable for harder cases.
 MODEL_DEFAULT = "claude-haiku-4-5-20251001"
 MODEL_STRONG = "claude-sonnet-4-6"
 MODEL = MODEL_DEFAULT
+
+# --- Cost estimation -----------------------------------------------------
+# Anthropic Haiku list prices (US dollars per million tokens). The per-call
+# estimates below are derived from these plus typical token counts: a triage
+# call is one short request, an investigation is a short ReAct session. These
+# let every run print an estimated dollar cost from call counts alone, so the
+# estimate works in mock mode with zero real API calls.
+HAIKU_INPUT_PER_MTOK = 1.00
+HAIKU_OUTPUT_PER_MTOK = 5.00
+EST_TRIAGE_COST = 0.0007          # estimated dollars per triage call
+EST_INVESTIGATION_COST = 0.012    # estimated dollars per investigation
 
 # --- Tool defaults -------------------------------------------------------
 ACCOUNT_HISTORY_LOOKBACK_DAYS = 30

@@ -107,17 +107,21 @@ class ReplayAgent:
 
 
 # --- real agent (record / live) -----------------------------------------
-SYSTEM_PROMPT = (
-    "You are a fraud investigation agent screening a single payment "
-    "transaction. You are given the transaction and precomputed signals. Use "
-    "the tools to gather only the evidence you still need, then decide. Be "
-    "efficient: the outer loop already flagged this txn, so focus on confirming "
-    "or clearing it. When you have enough evidence, STOP calling tools and "
-    "reply with ONLY a JSON object (no prose, no code fence) with exactly these "
-    "keys: label (one of legitimate, suspicious, fraud), risk_score (number "
-    "0..1, continuous), confidence (number 0..1), recommended_action (one of "
-    "clear, review_queue, block), rationale (at most 4 plain sentences)."
-)
+def _load_prompt(path) -> str:
+    """Read an externalized system prompt from disk. Loaded once at import.
+
+    Raises a clear error if the prompt file is missing so a misconfigured
+    checkout fails loudly rather than running with an empty prompt.
+    """
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Prompt file not found: {path}. The investigation system prompt is "
+            f"externalized under prompts/; restore it to run the agent."
+        )
+    return path.read_text().strip()
+
+
+SYSTEM_PROMPT = _load_prompt(config.INVESTIGATION_PROMPT_FILE)
 
 
 def _tool_schemas() -> list[dict[str, Any]]:

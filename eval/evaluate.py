@@ -22,6 +22,7 @@ is_fraud, plus llm_called for cost accounting.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -31,13 +32,58 @@ REPORT_PATH = Path(__file__).resolve().parent / "report.md"
 
 def load_records(path: Path = VERDICTS_PATH) -> list[dict[str, Any]]:
     """Read outputs/verdicts.jsonl into a list of TxnRecord dicts."""
-    raise NotImplementedError("Owner implements: see SPEC.md section 11.")
+    records = []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                records.append(json.loads(line))
+    return records
+
+def threshold_sweep(records, score_key="final_score"):
+    """Compute precision and recall at thresholds from 0.0 to 1.0 in 0.05 steps."""
+    results = []
+    steps = 21  # 0.00, 0.05, ... 1.00 is 21 points
+    for i in range(steps):
+        t = i * 0.05
+        cm = confusion_matrix(records, t, score_key)
+        p = precision(cm)
+        r = recall(cm)
+        results.append({"threshold": t, "precision": p, "recall": r})
+    return results
 
 
-def threshold_sweep(records: list[dict[str, Any]], score_key: str = "final_score"):
-    """Return precision/recall (and the curve data) across decision thresholds."""
-    raise NotImplementedError("Owner implements: see SPEC.md section 11.")
+def confusion_matrix(records,threshold, score_key="final_score"):
+    """Count TP, FP, TN, FN at a decision threshold."""
+    tp = fp = tn = fn = 0
+    for r in records:
+        flagged = r[score_key] >= threshold
+        is_fraud = r["is_fraud"] == 1
+        if flagged and is_fraud:
+            tp += 1
+        elif flagged and not is_fraud:
+            fp += 1
+        elif not flagged and is_fraud:
+            fn += 1
+        else:
+            tn +=1
+    return {"tp": tp, "fp": fp, "tn": tn, "fn":  fn}
+    
 
+def precision(cm):
+    """Of everything flagged, what fraction was really fraud? tp / (tp + fp)."""
+    tp = cm["tp"]
+    fp = cm["fp"]
+    denom = tp + fp
+    return tp / denom if denom else 0.0
+    
+def recall(cm):
+    """Of all real fraud, what fraction did we catch? tp / (tp + fn)."""
+    tp = cm["tp"]
+    fn = cm["fn"]
+    denom = tp + fn
+    return tp / denom if denom else 0.0
+    
 
 def operating_point(records: list[dict[str, Any]], threshold: float):
     """Return the confusion matrix (TP, FP, TN, FN) and F1 at one threshold."""
@@ -60,7 +106,11 @@ def write_report(path: Path = REPORT_PATH) -> None:
 
 
 if __name__ == "__main__":
-    raise SystemExit(
-        "eval/evaluate.py is a stub. The owner implements the metrics per "
-        "SPEC.md section 11."
-    )
+    records = load_records()
+    print(f"loaded {len(records)} records")
+    for row in threshold_sweep(records):
+        t = row["threshold"]
+        p = row["precision"]
+        r = row["recall"]
+        print(f"t={t:.2f} p={p:.2f} r={r:.2f}")
+ 
