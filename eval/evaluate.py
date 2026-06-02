@@ -87,30 +87,55 @@ def recall(cm):
 
 def operating_point(records: list[dict[str, Any]], threshold: float):
     """Return the confusion matrix (TP, FP, TN, FN) and F1 at one threshold."""
-    raise NotImplementedError("Owner implements: see SPEC.md section 11.")
+    cm = confusion_matrix(records, threshold)
+    p = precision(cm)
+    r = recall(cm)
+    f1 = 2 * p * r / (p + r) if (p + r) else 0.0
+    return {"threshold": threshold, "cm": cm, "precision": p, "recall": r, "f1": f1}
 
 
 def baseline(records: list[dict[str, Any]]):
     """Precision/recall using rule_score alone (the rules-only baseline)."""
-    raise NotImplementedError("Owner implements: see SPEC.md section 11.")
+    return threshold_sweep(records, score_key="rule_score")
 
 
 def cost_story(records: list[dict[str, Any]]):
     """Count llm_called == true rows against total volume."""
-    raise NotImplementedError("Owner implements: see SPEC.md section 11.")
-
+    total = len(records)
+    llm_calls = sum(1 for r in records if r["llm_called"])
+    pct = llm_calls / total if total else 0.0
+    return {"total": total, "llm_calls": llm_calls, "pct_with_llm": pct}
 
 def write_report(path: Path = REPORT_PATH) -> None:
     """Write the full evaluation to eval/report.md."""
-    raise NotImplementedError("Owner implements: see SPEC.md section 11.")
+    records = load_records()
+
+    two_loop = threshold_sweep(records, score_key="final_score")
+    rules = baseline(records)
+    op = operating_point(records, threshold=0.5)
+    cost = cost_story(records)
+
+    lines = []
+    lines.append("# Fraud Screening Evaluation\n")
+    lines.append(f"Total transactions: {cost['total']}\n")
+
+    lines.append("## Operating point (threshold 0.50)\n")
+    cm = op["cm"]
+    lines.append(f"- TP {cm['tp']}  FP {cm['fp']}  TN {cm['tn']}  FN {cm['fn']}")
+    lines.append(f"- precision {op['precision']:.3f}  recall {op['recall']:.3f}  f1 {op['f1']:.3f}\n")
+
+    lines.append("## Cost story\n")
+    lines.append(f"- transactions that called the LLM: {cost['llm_calls']} ({cost['pct_with_llm']:.2%} of volume)\n")
+
+    lines.append("## Precision / recall curve\n")
+    lines.append("| threshold | two-loop P | two-loop R | rules-only P | rules-only R |")
+    lines.append("| --- | --- | --- | --- | --- |")
+    for tl, rl in zip(two_loop, rules):
+        lines.append(f"| {tl['threshold']:.2f} | {tl['precision']:.3f} | {tl['recall']:.3f} | {rl['precision']:.3f} | {rl['recall']:.3f} |")
+
+    path.write_text("\n".join(lines))
+    print(f"wrote {path}")
 
 
 if __name__ == "__main__":
-    records = load_records()
-    print(f"loaded {len(records)} records")
-    for row in threshold_sweep(records):
-        t = row["threshold"]
-        p = row["precision"]
-        r = row["recall"]
-        print(f"t={t:.2f} p={p:.2f} r={r:.2f}")
- 
+    write_report()
