@@ -18,3 +18,5 @@ data/*test*.csv
 
 # OS
 .DS_Store
+.env
+tune/tuning_log.csv

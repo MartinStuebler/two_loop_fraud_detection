@@ -62,3 +62,20 @@ One task per file, grouped by SPEC phase. Check each box when the file is done a
 - [x] `src/orchestrator.py`: print an `[estimated]` cost line every run from call counts (works in mock)
 - [x] `tests/test_triage.py`: mock decision + fake-client real loop + replay; zero live calls
 - [x] Gate: two free mock runs (rules and agent) write 49,683 records and print cost lines; `pytest` green
+
+## Phase 7: Prompt-tuning harness for the triage agent
+Scaffolding only; a real gold set arrives later. Lives under `tune/`, NOT `eval/`
+(CLAUDE.md forbids writing under `eval/`; harness only IMPORTS from `eval/evaluate.py`).
+- [x] `tune/gold_tune.jsonl` + `tune/gold_test.jsonl`: fixed labeled fixtures seeded from
+      the existing cassette/verdicts; same fields as verdicts.jsonl incl `is_fraud`.
+      Deterministic split by txn_id; nothing in the system writes these at runtime.
+- [x] `tune/tune.py`: take a prompt-file path, run triage over the gold TUNE set in
+      replay/mock (no live API by default), score by REUSING `confusion_matrix`,
+      `precision`, `recall`, `operating_point` from `eval/evaluate.py`; print P/R/F1.
+- [x] `tune/tune.py`: append one row to `tune/tuning_log.csv`
+      (timestamp, prompt_file, git_commit, tune_precision, tune_recall, tune_f1).
+- [x] `tune/tune.py`: `--test` flag scores the held-out TEST set, reported separately,
+      NOT written to the tuning log.
+- [x] `tune/README.md`: mark the seed as a placeholder, far too small to be a real judge
+      (1 fraud / 100, test split has 0 fraud); document split, read-only intent, modes.
+- [x] Gate: dry run on the seed tune set prints P/R/F1 and shows the logged row.

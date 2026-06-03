@@ -191,7 +191,9 @@ def build_triage_agent(mode: str):
         import os
 
         import anthropic
+        from dotenv import load_dotenv
 
+        load_dotenv()
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
             raise RuntimeError(
