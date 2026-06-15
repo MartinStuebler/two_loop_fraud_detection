@@ -10,6 +10,9 @@ tiny slice is worth the spend, and the agent investigates only those. On the
 committed sample the outer loop forwards about 10 percent of transactions to the
 inner loop, so roughly 90 percent never cost an API call.
 
+ <img width="2480" height="940" alt="fraud_detection_flow" src="https://github.com/user-attachments/assets/1223d208-51ff-4119-81c1-b6e32f65217d" />
+
+
 ## Architecture
 
 ```
